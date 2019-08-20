@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/xuender/tookit"
+	"github.com/xuender/toolkit"
 )
 
 func main() {
-	cache := tookit.NewCache(1 * time.Second)
+	cache := toolkit.NewCache(1 * time.Second)
 	defer cache.Close()
 	cache.Put("key1", "value1")
 	cache.Put("key2", "value2")
