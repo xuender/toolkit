@@ -3,51 +3,75 @@ package toolkit
 import (
 	"fmt"
 	"testing"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestChMap(t *testing.T) {
-	Convey("ChMap", t, func() {
-		chMap := NewChMap()
-		defer chMap.Close()
-		chMap.Set("1", 1)
-		chMap.Set("2", 2)
-		Convey("Size", func() {
-			So(chMap.Size(), ShouldEqual, 2)
-		})
-		Convey("Get", func() {
-			v, ok := chMap.Get("2")
-			So(v, ShouldEqual, 2)
-			So(ok, ShouldEqual, true)
-		})
-		Convey("Has", func() {
-			So(chMap.Has("1"), ShouldEqual, true)
-			So(chMap.Has("no"), ShouldEqual, false)
-		})
-		Convey("Keys", func() {
-			keys := chMap.Keys()
-			So(len(keys), ShouldEqual, 2)
-		})
-		Convey("Set", func() {
-			chMap.Set("2", 3)
-			v, ok := chMap.Get("2")
-			So(v, ShouldEqual, 3)
-			So(ok, ShouldEqual, true)
-		})
-		Convey("Remove", func() {
-			chMap.Remove("1")
-			So(chMap.Size(), ShouldEqual, 1)
-		})
-		Convey("Iterator", func() {
-			chMap.Iterator(func(k, v interface{}) {
-				g, _ := chMap.Get(k)
-				So(g, ShouldEqual, v)
-			})
+	m := NewChMap()
+	defer m.Close()
+	m.Set("1", 1)
+	m.Set("2", 2)
+	t.Run("Size", func(t *testing.T) {
+		got := m.Size()
+		want := 2
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Get", func(t *testing.T) {
+		got, ok := m.Get("2")
+		want := 2
+		if !ok {
+			t.Errorf("got '%v' want true", ok)
+		}
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Has", func(t *testing.T) {
+		got := m.Has("2")
+		if !got {
+			t.Errorf("got '%v' want true", got)
+		}
+		got = m.Has("no")
+		if got {
+			t.Errorf("got '%v' want false", got)
+		}
+	})
+	t.Run("Keys", func(t *testing.T) {
+		got := len(m.Keys())
+		want := 2
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Set", func(t *testing.T) {
+		m.Set("2", 3)
+		got, ok := m.Get("2")
+		want := 3
+		if !ok {
+			t.Errorf("got '%v' want true", ok)
+		}
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Del", func(t *testing.T) {
+		m.Remove("1")
+		got := m.Size()
+		want := 1
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Iterator", func(t *testing.T) {
+		m.Iterator(func(k, want interface{}) {
+			got, _ := m.Get(k)
+			if got != want {
+				t.Errorf("got '%d' want '%d'", got, want)
+			}
 		})
 	})
 }
-
 func ExampleChMap() {
 	chMap := NewChMap()
 	defer chMap.Close()

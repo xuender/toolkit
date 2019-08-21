@@ -4,43 +4,65 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestCache(t *testing.T) {
-	Convey("Cache", t, func() {
-		cache := NewCache(time.Second * 1)
-		cache.Set("key1", "value1")
-		cache.Set("key2", "value2")
-		Convey("Size", func() {
-			So(cache.Size(), ShouldEqual, 2)
-		})
-		Convey("Get", func() {
-			v, ok := cache.Get("key2")
-			So(v, ShouldEqual, "value2")
-			So(ok, ShouldEqual, true)
-		})
-		Convey("Set", func() {
-			cache.Set("key2", "value3")
-			v, ok := cache.Get("key2")
-			So(v, ShouldEqual, "value3")
-			So(ok, ShouldEqual, true)
-		})
-		Convey("Del", func() {
-			cache.Del("key1")
-			So(cache.Size(), ShouldEqual, 1)
-		})
-		Convey("Keys", func() {
-			So(len(cache.Keys()), ShouldEqual, 2)
-		})
-		Convey("Time", func() {
-			time.Sleep(time.Second * 2)
-			So(cache.Size(), ShouldEqual, 0)
-		})
-
+	cache := NewCache(time.Second * 1)
+	cache.Set("key1", "value1")
+	cache.Set("key2", "value2")
+	t.Run("Size", func(t *testing.T) {
+		got := cache.Size()
+		want := 2
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Get", func(t *testing.T) {
+		got, ok := cache.Get("key2")
+		want := "value2"
+		if !ok {
+			t.Errorf("got '%v' want true", ok)
+		}
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("Set", func(t *testing.T) {
+		cache.Set("key2", "value3")
+		got, ok := cache.Get("key2")
+		want := "value3"
+		if !ok {
+			t.Errorf("got '%v' want true", ok)
+		}
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("Del", func(t *testing.T) {
+		cache.Del("key1")
+		got := cache.Size()
+		want := 1
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Keys", func(t *testing.T) {
+		got := len(cache.Keys())
+		want := 1
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
+	})
+	t.Run("Keys", func(t *testing.T) {
+		time.Sleep(time.Second * 2)
+		got := cache.Size()
+		want := 0
+		if got != want {
+			t.Errorf("got '%d' want '%d'", got, want)
+		}
 	})
 }
+
 func BenchmarkCacheCount(b *testing.B) {
 	cache := NewCache(time.Second * 20)
 	b.ResetTimer()
