@@ -109,6 +109,8 @@ func (c *Cache) Size() int {
 	return len(c.data)
 }
 
+var caches = []*Cache{}
+
 // NewCache new cache.
 func NewCache(expire time.Duration, LRU ...bool) *Cache {
 	cache := &Cache{
@@ -119,11 +121,16 @@ func NewCache(expire time.Duration, LRU ...bool) *Cache {
 	if len(LRU) > 0 {
 		cache.LRU = LRU[0]
 	}
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		for now := range ticker.C {
-			cache.Clean(now)
-		}
-	}()
+	if len(caches) == 0 {
+		go func() {
+			ticker := time.NewTicker(time.Second)
+			for now := range ticker.C {
+				for _, c := range caches {
+					c.Clean(now)
+				}
+			}
+		}()
+	}
+	caches = append(caches, cache)
 	return cache
 }
