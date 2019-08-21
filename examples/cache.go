@@ -8,13 +8,16 @@ import (
 )
 
 func main() {
-	cache := toolkit.NewCache(1 * time.Second)
-	defer cache.Close()
-	cache.Put("key1", "value1")
-	cache.Put("key2", "value2")
+	// LRU
+	cache := toolkit.NewCache(time.Second*3, true)
+	cache.Set("key1", "value1")
+	cache.SetByDuration("key2", "value2", time.Second)
+	cache.Set("key3", "value3")
 
-	fmt.Println(cache.Get("key1"))
-	fmt.Println(cache.Count())
+	fmt.Println("init size:", cache.Size())
 	time.Sleep(time.Second * 2)
-	fmt.Println(cache.Count())
+	cache.Get("key3") // reset expire time.
+	fmt.Println("2 Second:", cache.Size())
+	time.Sleep(time.Second * 2)
+	fmt.Println("4 Second:", cache.Size())
 }

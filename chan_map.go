@@ -1,13 +1,28 @@
 package toolkit
 
+const (
+	_Put = iota
+	_Get
+	_Remove
+	_Close
+	_Error
+)
+
+type callBack struct {
+	Key    interface{}
+	Value  interface{}
+	ChBack chan callBack
+	Route  int
+}
+
 // ChMap is channel map.
 type ChMap struct {
 	data       map[interface{}]interface{}
 	chCallBack chan callBack
 }
 
-// Put value by key.
-func (p ChMap) Put(key, value interface{}) {
+// Set value by key.
+func (p ChMap) Set(key, value interface{}) {
 	ch := make(chan callBack, 1)
 	defer close(ch)
 	p.chCallBack <- callBack{
@@ -38,8 +53,8 @@ func (p ChMap) Close() {
 	}
 }
 
-// Count ChMap.
-func (p ChMap) Count() int {
+// Size ChMap.
+func (p ChMap) Size() int {
 	return len(p.data)
 }
 

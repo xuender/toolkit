@@ -1,145 +1,128 @@
 package toolkit
 
-import "time"
-
-const (
-	_Put = iota
-	_Get
-	_Remove
-	_Close
-	_Error
+import (
+	"sync"
+	"time"
 )
 
-type callBack struct {
-	Key    interface{}
-	Value  interface{}
-	ChBack chan callBack
-	Route  int
-}
-
-// Closer have Close function.
-type Closer interface {
-	Close()
-}
-
-// Cache is LRU.
+// Cache support LRU (Least Recently Used).
 type Cache struct {
-	data       map[interface{}]interface{}
-	access     map[interface{}]time.Time
-	chCallBack chan callBack
+	lock   sync.RWMutex
+	data   map[interface{}]interface{}
+	access map[interface{}]time.Time
+
+	Expire time.Duration
+	LRU    bool
 }
 
-// Put vlaue by key.
-func (c *Cache) Put(key, value interface{}) {
-	ch := make(chan callBack, 1)
-	defer close(ch)
-	c.chCallBack <- callBack{
-		Key:    key,
-		Value:  value,
-		Route:  _Put,
-		ChBack: ch,
-	}
-	<-ch
+// Set value by key.
+func (c *Cache) Set(key, value interface{}) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.data[key] = value
+	c.access[key] = time.Now().Add(c.Expire)
+}
+
+// SetByTime value by key.
+func (c *Cache) SetByTime(key, value interface{}, expire time.Time) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.data[key] = value
+	c.access[key] = expire
+}
+
+// SetByDuration value by key.
+func (c *Cache) SetByDuration(key, value interface{}, expire time.Duration) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.data[key] = value
+	c.access[key] = time.Now().Add(expire)
 }
 
 // Get value by key.
 func (c *Cache) Get(key interface{}) (interface{}, bool) {
-	ch := make(chan callBack, 1)
-	defer close(ch)
-	c.chCallBack <- callBack{
-		Key:    key,
-		Route:  _Get,
-		ChBack: ch,
+	c.lock.RLock()
+	value, ok := c.data[key]
+	c.lock.RUnlock()
+	if c.LRU {
+		c.Reset(key)
 	}
-	ret := <-ch
-	if ret.Route == _Error {
-		return nil, false
-	}
-	return ret.Value, true
+	return value, ok
 }
 
-// Remove key.
-func (c *Cache) Remove(key interface{}) {
-	ch := make(chan callBack, 1)
-	defer close(ch)
-	c.chCallBack <- callBack{
-		Key:    key,
-		Route:  _Remove,
-		ChBack: ch,
+// Reset expire by key.
+func (c *Cache) Reset(key interface{}) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if a, ok := c.access[key]; ok {
+		e := time.Now().Add(c.Expire)
+		if e.After(a) {
+			c.access[key] = e
+		}
 	}
-	<-ch
 }
 
-// Count Cache.
-func (c *Cache) Count() int {
+// Keys by map.
+func (c *Cache) Keys() []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	keys := make([]interface{}, len(c.data))
+	i := 0
+	for k := range c.data {
+		keys[i] = k
+		i++
+	}
+	return keys
+
+}
+
+// Del key.
+func (c *Cache) Del(key interface{}) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	delete(c.data, key)
+	delete(c.access, key)
+}
+
+// Clean overdue.
+func (c *Cache) Clean(overdue time.Time) {
+	for _, key := range c.Overdue(overdue) {
+		c.Del(key)
+	}
+}
+
+// Overdue keys.
+func (c *Cache) Overdue(overdue time.Time) []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	keys := []interface{}{}
+	for key, v := range c.access {
+		if overdue.After(v) {
+			keys = append(keys, key)
+		}
+	}
+	return keys
+}
+
+// Size by Cache.
+func (c *Cache) Size() int {
 	return len(c.data)
 }
 
-// Close cache.
-func (c *Cache) Close() {
-	c.chCallBack <- callBack{
-		Route: _Close,
-	}
-}
-
-func (c *Cache) run() {
-	for {
-		cb := <-c.chCallBack
-		switch cb.Route {
-		case _Put:
-			c.data[cb.Key] = cb.Value
-			c.access[cb.Key] = time.Now()
-		case _Get:
-			if value, ok := c.data[cb.Key]; ok {
-				cb.Value = value
-				c.access[cb.Key] = time.Now()
-			} else {
-				cb.Route = _Error
-			}
-		case _Remove:
-			if value, ok := c.data[cb.Key]; ok {
-				if v, o := value.(Closer); o {
-					v.Close()
-				}
-				delete(c.data, cb.Key)
-				delete(c.access, cb.Key)
-			}
-		case _Close:
-			for key, value := range c.data {
-				if v, ok := value.(Closer); ok {
-					v.Close()
-				}
-				delete(c.data, key)
-				delete(c.access, key)
-			}
-			close(c.chCallBack)
-			return
-		}
-		cb.ChBack <- cb
-	}
-}
-
 // NewCache new cache.
-func NewCache(expire time.Duration) *Cache {
+func NewCache(expire time.Duration, LRU ...bool) *Cache {
 	cache := &Cache{
-		data:       make(map[interface{}]interface{}),
-		access:     make(map[interface{}]time.Time),
-		chCallBack: make(chan callBack, 3),
+		data:   make(map[interface{}]interface{}),
+		access: make(map[interface{}]time.Time),
+		Expire: expire,
 	}
-	go cache.run()
-	t := time.Minute
-	if expire < t {
-		t = expire
+	if len(LRU) > 0 {
+		cache.LRU = LRU[0]
 	}
-	ticker := time.NewTicker(t)
 	go func() {
-		for range ticker.C {
-			now := time.Now()
-			for key, v := range cache.access {
-				if now.Sub(v) > expire {
-					cache.Remove(key)
-				}
-			}
+		ticker := time.NewTicker(time.Second)
+		for now := range ticker.C {
+			cache.Clean(now)
 		}
 	}()
 	return cache
