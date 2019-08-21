@@ -34,8 +34,8 @@ func (p ChMap) Set(key, value interface{}) {
 	<-ch
 }
 
-// Remove obj by key.
-func (p ChMap) Remove(key interface{}) {
+// Del obj by key.
+func (p ChMap) Del(key interface{}) {
 	ch := make(chan callBack, 1)
 	defer close(ch)
 	p.chCallBack <- callBack{

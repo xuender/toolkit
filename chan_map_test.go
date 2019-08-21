@@ -3,6 +3,8 @@ package toolkit
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestChMap(t *testing.T) {
@@ -10,66 +12,30 @@ func TestChMap(t *testing.T) {
 	defer m.Close()
 	m.Set("1", 1)
 	m.Set("2", 2)
-	t.Run("Size", func(t *testing.T) {
-		got := m.Size()
-		want := 2
+	assert.Equal(t, 2, m.Size(), "Size")
+
+	value, ok := m.Get("2")
+	assert.Equal(t, 2, value, "Get")
+	assert.True(t, ok, "Get ok")
+
+	assert.True(t, m.Has("2"), "Has true")
+	assert.False(t, m.Has("no"), "Has false")
+
+	assert.Equal(t, 2, len(m.Keys()), "Keys")
+
+	m.Set("2", 3)
+	value, ok = m.Get("2")
+	assert.Equal(t, 3, value, "Set")
+	assert.True(t, ok, "Set ok")
+
+	m.Del("1")
+	assert.Equal(t, 1, m.Size(), "Remove")
+
+	m.Iterator(func(k, want interface{}) {
+		got, _ := m.Get(k)
 		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
+			assert.Equal(t, want, got, "Iterator")
 		}
-	})
-	t.Run("Get", func(t *testing.T) {
-		got, ok := m.Get("2")
-		want := 2
-		if !ok {
-			t.Errorf("got '%v' want true", ok)
-		}
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Has", func(t *testing.T) {
-		got := m.Has("2")
-		if !got {
-			t.Errorf("got '%v' want true", got)
-		}
-		got = m.Has("no")
-		if got {
-			t.Errorf("got '%v' want false", got)
-		}
-	})
-	t.Run("Keys", func(t *testing.T) {
-		got := len(m.Keys())
-		want := 2
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Set", func(t *testing.T) {
-		m.Set("2", 3)
-		got, ok := m.Get("2")
-		want := 3
-		if !ok {
-			t.Errorf("got '%v' want true", ok)
-		}
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Del", func(t *testing.T) {
-		m.Remove("1")
-		got := m.Size()
-		want := 1
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Iterator", func(t *testing.T) {
-		m.Iterator(func(k, want interface{}) {
-			got, _ := m.Get(k)
-			if got != want {
-				t.Errorf("got '%d' want '%d'", got, want)
-			}
-		})
 	})
 }
 func ExampleChMap() {

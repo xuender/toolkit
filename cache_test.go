@@ -4,63 +4,33 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCache(t *testing.T) {
 	cache := NewCache(time.Second * 1)
 	cache.Set("key1", "value1")
 	cache.Set("key2", "value2")
-	t.Run("Size", func(t *testing.T) {
-		got := cache.Size()
-		want := 2
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Get", func(t *testing.T) {
-		got, ok := cache.Get("key2")
-		want := "value2"
-		if !ok {
-			t.Errorf("got '%v' want true", ok)
-		}
-		if got != want {
-			t.Errorf("got '%s' want '%s'", got, want)
-		}
-	})
-	t.Run("Set", func(t *testing.T) {
-		cache.Set("key2", "value3")
-		got, ok := cache.Get("key2")
-		want := "value3"
-		if !ok {
-			t.Errorf("got '%v' want true", ok)
-		}
-		if got != want {
-			t.Errorf("got '%s' want '%s'", got, want)
-		}
-	})
-	t.Run("Del", func(t *testing.T) {
-		cache.Del("key1")
-		got := cache.Size()
-		want := 1
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Keys", func(t *testing.T) {
-		got := len(cache.Keys())
-		want := 1
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
-	t.Run("Keys", func(t *testing.T) {
-		time.Sleep(time.Second * 2)
-		got := cache.Size()
-		want := 0
-		if got != want {
-			t.Errorf("got '%d' want '%d'", got, want)
-		}
-	})
+
+	assert.Equal(t, 2, cache.Size(), "Size")
+
+	value, ok := cache.Get("key2")
+	assert.Equal(t, "value2", value, "Get")
+	assert.True(t, ok, "Get ok")
+
+	cache.Set("key2", "value3")
+	value, ok = cache.Get("key2")
+	assert.Equal(t, "value3", value, "Get")
+	assert.True(t, ok, "Get ok")
+
+	cache.Del("key1")
+	assert.Equal(t, 1, cache.Size(), "Size")
+
+	assert.Equal(t, 1, len(cache.Keys()), "Keys")
+
+	time.Sleep(time.Second * 2)
+	assert.Equal(t, 0, cache.Size(), "time")
 }
 
 func BenchmarkCacheCount(b *testing.B) {
@@ -88,28 +58,31 @@ func BenchmarkMapPut(b *testing.B) {
 }
 
 func ExampleCache() {
-	cache := NewCache(time.Second)
+	cache := NewCache(time.Second*3, true)
 	cache.Set("key1", "value1")
-	cache.SetByDuration("key2", "value2", time.Second*3)
+	cache.SetByDuration("key2", "value2", time.Second)
+	cache.Set("key3", "value3")
 
 	fmt.Println(cache.Get("key1"))
-	fmt.Println(cache.Size())
+	fmt.Println("init size:", cache.Size())
 	time.Sleep(time.Second * 2)
-	fmt.Println(cache.Size())
+	cache.Get("key3") // reset expire time.
+	fmt.Println("2 second:", cache.Size())
+	time.Sleep(time.Second * 2)
+	fmt.Println("4 second:", cache.Size())
 
 	// Output:
 	// value1 true
-	// 2
-	// 1
+	// init size: 3
+	// 2 second: 2
+	// 4 second: 1
 }
 
 func TestCachePut1(t *testing.T) {
 	c := NewCache(time.Second * 3)
 	c.Set("3", "3")
 	time.Sleep(time.Second * 4)
-	if c.Size() != 0 {
-		t.Errorf("The expired cache still exists")
-	}
+	assert.Equal(t, 0, c.Size(), "exists")
 }
 
 func TestCachePut2(t *testing.T) {
@@ -117,9 +90,7 @@ func TestCachePut2(t *testing.T) {
 	time.Sleep(time.Second * 1)
 	c.Set("3", "3")
 	time.Sleep(time.Second * 4)
-	if c.Size() != 0 {
-		t.Errorf("The expired cache still exists")
-	}
+	assert.Equal(t, 0, c.Size(), "exists")
 }
 func TestCachePut3(t *testing.T) {
 	c := NewCache(time.Second*2, true)
@@ -129,7 +100,5 @@ func TestCachePut3(t *testing.T) {
 	time.Sleep(time.Second * 1)
 	c.Get(1)
 	time.Sleep(time.Second * 1)
-	if c.Size() == 0 {
-		t.Errorf("LRU error")
-	}
+	assert.Equal(t, 1, c.Size(), "LRU")
 }

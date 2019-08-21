@@ -3,6 +3,8 @@ package toolkit
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkSyncMap_Put(b *testing.B) {
@@ -17,9 +19,7 @@ func TestSyncMap_Put(t *testing.T) {
 	m := NewSyncMap()
 	m.Set("key1", "value1")
 	m.Set("key2", "value2")
-	if m.Size() != 2 {
-		t.Errorf("Size error %d.", m.Size())
-	}
+	assert.Equal(t, 2, m.Size(), "Size")
 }
 
 func ExampleSyncMap() {
