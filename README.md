@@ -9,25 +9,25 @@ golang toolkit.
 package main
 
 import (
-	"fmt"
-	"time"
+  "fmt"
+  "time"
 
-	"github.com/xuender/toolkit"
+  "github.com/xuender/toolkit"
 )
 
 func main() {
   // LRU
-	cache := toolkit.NewCache(time.Second*3, true)
-	cache.Set("key1", "value1")
-	cache.SetByDuration("key2", "value2", time.Second)
-	cache.Set("key3", "value3")
+  cache := toolkit.NewCache(time.Second*3, true)
+  cache.Set("key1", "value1")
+  cache.SetByDuration("key2", "value2", time.Second)
+  cache.Set("key3", "value3")
 
-	fmt.Println("init size:", cache.Size())
-	time.Sleep(time.Second * 2)
-	cache.Get("key3") // reset expire time.
-	fmt.Println("2 Second:", cache.Size())
-	time.Sleep(time.Second * 2)
-	fmt.Println("4 Second:", cache.Size())
+  fmt.Println("init size:", cache.Size())
+  time.Sleep(time.Second * 2)
+  cache.Get("key3") // reset expire time.
+  fmt.Println("2 Second:", cache.Size())
+  time.Sleep(time.Second * 2)
+  fmt.Println("4 Second:", cache.Size())
 }
 ```
 
@@ -36,20 +36,19 @@ func main() {
 package main
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/xuender/toolkit"
+  "github.com/xuender/toolkit"
 )
 
 func main() {
-	m := toolkit.NewSyncMap()
-	m.Set("key1", "value1")
-	m.Set("key2", "value2")
+  m := toolkit.NewSyncMap()
+  m.Set("key1", "value1")
+  m.Set("key2", "value2")
 
-	fmt.Println(m.Get("key1"))
-	fmt.Println(m.Size())
+  fmt.Println(m.Get("key1"))
+  fmt.Println(m.Size())
 }
-
 ```
 
 ### ChMap
@@ -57,19 +56,18 @@ func main() {
 package main
 
 import (
-	"fmt"
+  "fmt"
 
-	"github.com/xuender/toolkit"
+  "github.com/xuender/toolkit"
 )
 
 func main() {
-	chMap := toolkit.NewChMap()
-	defer chMap.Close()
-	chMap.Set("key1", "value1")
-	chMap.Set("key2", "value2")
+  m:= toolkit.NewChMap()
+  defer m.Close()
+  m.Set("key1", "value1")
+  m.Set("key2", "value2")
 
-	fmt.Println(chMap.Get("key1"))
-	fmt.Println(chMap.Size())
+  fmt.Println(m.Get("key1"))
+  fmt.Println(m.Size())
 }
-
 ```
