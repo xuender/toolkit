@@ -9,7 +9,7 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	cache := NewCache(time.Second * 1)
+	cache := NewCache(1 * time.Second)
 	cache.Set("key1", "value1")
 	cache.Set("key2", "value2")
 
@@ -29,12 +29,12 @@ func TestCache(t *testing.T) {
 
 	assert.Equal(t, 1, len(cache.Keys()), "Keys")
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(2 * time.Second)
 	assert.Equal(t, 0, cache.Size(), "time")
 }
 
 func BenchmarkCacheCount(b *testing.B) {
-	cache := NewCache(time.Second * 20)
+	cache := NewCache(20 * time.Second)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		cache.Size()
@@ -42,7 +42,7 @@ func BenchmarkCacheCount(b *testing.B) {
 }
 
 func BenchmarkCachePut(b *testing.B) {
-	cache := NewCache(time.Second * 20)
+	cache := NewCache(20 * time.Second)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		cache.Set("key1", "value1")
@@ -58,17 +58,17 @@ func BenchmarkMapPut(b *testing.B) {
 }
 
 func ExampleCache() {
-	cache := NewCache(time.Second*3, true)
+	cache := NewCache(3*time.Second, true)
 	cache.Set("key1", "value1")
 	cache.SetByDuration("key2", "value2", time.Second)
 	cache.Set("key3", "value3")
 
 	fmt.Println(cache.Get("key1"))
 	fmt.Println("init size:", cache.Size())
-	time.Sleep(time.Second * 2)
+	time.Sleep(2 * time.Second)
 	cache.Get("key3") // reset expire time.
 	fmt.Println("2 second:", cache.Size())
-	time.Sleep(time.Second * 2)
+	time.Sleep(2 * time.Second)
 	fmt.Println("4 second:", cache.Size())
 
 	// Output:
@@ -79,26 +79,26 @@ func ExampleCache() {
 }
 
 func TestCachePut1(t *testing.T) {
-	c := NewCache(time.Second * 3)
+	c := NewCache(3 * time.Second)
 	c.Set("3", "3")
-	time.Sleep(time.Second * 4)
+	time.Sleep(4 * time.Second)
 	assert.Equal(t, 0, c.Size(), "exists")
 }
 
 func TestCachePut2(t *testing.T) {
-	c := NewCache(time.Second * 3)
-	time.Sleep(time.Second * 1)
+	c := NewCache(3 * time.Second)
+	time.Sleep(1 * time.Second)
 	c.Set("3", "3")
-	time.Sleep(time.Second * 4)
+	time.Sleep(4 * time.Second)
 	assert.Equal(t, 0, c.Size(), "exists")
 }
 func TestCachePut3(t *testing.T) {
-	c := NewCache(time.Second*2, true)
+	c := NewCache(2*time.Second, true)
 	c.Set(1, 1)
-	time.Sleep(time.Second * 1)
+	time.Sleep(1 * time.Second)
 	c.Get(1)
-	time.Sleep(time.Second * 1)
+	time.Sleep(1 * time.Second)
 	c.Get(1)
-	time.Sleep(time.Second * 1)
+	time.Sleep(1 * time.Second)
 	assert.Equal(t, 1, c.Size(), "LRU")
 }

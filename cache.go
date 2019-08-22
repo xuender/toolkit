@@ -123,7 +123,7 @@ func NewCache(expire time.Duration, LRU ...bool) *Cache {
 	}
 	if len(caches) == 0 {
 		go func() {
-			ticker := time.NewTicker(time.Second)
+			ticker := time.NewTicker(1 * time.Second)
 			for now := range ticker.C {
 				for _, c := range caches {
 					c.Clean(now)
