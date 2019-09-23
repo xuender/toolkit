@@ -33,7 +33,7 @@ func TestCache(t *testing.T) {
 	assert.Equal(t, 0, cache.Size(), "time")
 }
 
-func BenchmarkCacheCount(b *testing.B) {
+func BenchmarkCacheSize(b *testing.B) {
 	cache := NewCache(20 * time.Second)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -66,7 +66,7 @@ func ExampleCache() {
 	fmt.Println(cache.Get("key1"))
 	fmt.Println("init size:", cache.Size())
 	time.Sleep(2 * time.Second)
-	cache.Get("key3") // reset expire time.
+	fmt.Println(cache.Get("key3")) // reset expire time.
 	fmt.Println("2 second:", cache.Size())
 	time.Sleep(2 * time.Second)
 	fmt.Println("4 second:", cache.Size())
@@ -74,7 +74,33 @@ func ExampleCache() {
 	// Output:
 	// value1 true
 	// init size: 3
+	// value3 true
 	// 2 second: 2
+	// 4 second: 1
+}
+func ExampleNewCallbackCache() {
+	cache := NewCallbackCache(3*time.Second, func(key, value interface{}) {
+		fmt.Println("del:", key, value)
+	}, true)
+	cache.Set("key1", "value1")
+	cache.SetByDuration("key2", "value2", time.Second)
+	cache.Set("key3", "value3")
+
+	fmt.Println(cache.Get("key1"))
+	fmt.Println("init size:", cache.Size())
+	time.Sleep(2 * time.Second)
+	fmt.Println(cache.Get("key3")) // reset expire time.
+	fmt.Println("2 second:", cache.Size())
+	time.Sleep(2 * time.Second)
+	fmt.Println("4 second:", cache.Size())
+
+	// Output:
+	// value1 true
+	// init size: 3
+	// del: key2 value2
+	// value3 true
+	// 2 second: 2
+	// del: key1 value1
 	// 4 second: 1
 }
 

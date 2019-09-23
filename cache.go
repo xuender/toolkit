@@ -11,8 +11,9 @@ type Cache struct {
 	data   map[interface{}]interface{}
 	access map[interface{}]time.Time
 
-	Expire time.Duration
-	LRU    bool
+	Expire   time.Duration
+	LRU      bool
+	Callback func(key, value interface{})
 }
 
 // Set value by key.
@@ -50,6 +51,14 @@ func (c *Cache) Get(key interface{}) (interface{}, bool) {
 	return value, ok
 }
 
+// GetString by key.
+func (c *Cache) GetString(key interface{}) (string, bool) {
+	if value, ok := c.Get(key); ok {
+		return value.(string), ok
+	}
+	return "", false
+}
+
 // Reset expire by key.
 func (c *Cache) Reset(key interface{}) {
 	c.lock.Lock()
@@ -80,8 +89,10 @@ func (c *Cache) Keys() []interface{} {
 func (c *Cache) Del(key interface{}) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	value, _ := c.data[key]
 	delete(c.data, key)
 	delete(c.access, key)
+	c.Callback(key, value)
 }
 
 // Clean overdue.
@@ -114,9 +125,10 @@ var caches = []*Cache{}
 // NewCache new cache.
 func NewCache(expire time.Duration, LRU ...bool) *Cache {
 	cache := &Cache{
-		data:   make(map[interface{}]interface{}),
-		access: make(map[interface{}]time.Time),
-		Expire: expire,
+		data:     make(map[interface{}]interface{}),
+		access:   make(map[interface{}]time.Time),
+		Expire:   expire,
+		Callback: func(key, value interface{}) {},
 	}
 	if len(LRU) > 0 {
 		cache.LRU = LRU[0]
@@ -132,5 +144,12 @@ func NewCache(expire time.Duration, LRU ...bool) *Cache {
 		}()
 	}
 	caches = append(caches, cache)
+	return cache
+}
+
+// NewCallbackCache new have del callback cache.
+func NewCallbackCache(expire time.Duration, callback func(key, value interface{}), LRU ...bool) *Cache {
+	cache := NewCache(expire, LRU...)
+	cache.Callback = callback
 	return cache
 }
