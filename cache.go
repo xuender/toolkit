@@ -89,10 +89,11 @@ func (c *Cache) Keys() []interface{} {
 func (c *Cache) Del(key interface{}) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	value, _ := c.data[key]
+	if value, ok := c.data[key]; ok {
+		c.Callback(key, value)
+	}
 	delete(c.data, key)
 	delete(c.access, key)
-	c.Callback(key, value)
 }
 
 // Clean overdue.
